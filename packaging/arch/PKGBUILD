@@ -1,0 +1,43 @@
+# Maintainer: Sean Mackay
+#
+# This is a LOCAL-only package -- it builds from the electron-builder output
+# already produced in this checkout (../../dist/linux-unpacked), not from a
+# fetched source tarball, since this is a personal project with no public
+# repo. Build/install it on this machine with:
+#
+#   cd packaging/arch && makepkg -si
+#
+# Rebuild `npm run dist` in the project root first if the app's source has
+# changed -- this PKGBUILD just repackages whatever is already in
+# dist/linux-unpacked, it doesn't run the Electron build itself. Not meant
+# for submission to the real AUR as-is (no source tarball/checksums, and the
+# path below is specific to this machine).
+
+pkgname=synctroller
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Standalone desktop controller for the Philips Hue Play HDMI Sync Box"
+arch=('x86_64')
+license=('custom')
+depends=('gtk3' 'nss' 'libxss' 'libxtst' 'at-spi2-core' 'libdrm' 'mesa' 'alsa-lib' 'nspr')
+options=('!strip' '!emptydirs')
+
+_projectdir=/home/sean/projects/hue-sync-controller
+
+package() {
+  if [ ! -d "$_projectdir/dist/linux-unpacked" ]; then
+    echo "ERROR: $_projectdir/dist/linux-unpacked not found -- run 'npm run dist' in the project first." >&2
+    return 1
+  fi
+
+  install -dm755 "$pkgdir/opt/synctroller"
+  cp -a "$_projectdir/dist/linux-unpacked/." "$pkgdir/opt/synctroller/"
+
+  install -dm755 "$pkgdir/usr/bin"
+  ln -s /opt/synctroller/hue-sync-controller "$pkgdir/usr/bin/synctroller"
+
+  install -Dm644 "$_projectdir/packaging/arch/synctroller.desktop" \
+    "$pkgdir/usr/share/applications/synctroller.desktop"
+  install -Dm644 "$_projectdir/assets/icon.png" \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/synctroller.png"
+}

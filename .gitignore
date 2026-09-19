@@ -1,0 +1,7 @@
+node_modules/
+dist/
+packaging/arch/*.pkg.tar.zst
+packaging/arch/pkg/
+packaging/arch/src/
+packaging/arch/*.log
+*.log

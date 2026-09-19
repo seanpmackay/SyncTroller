@@ -1,0 +1,35 @@
+{
+  "name": "hue-sync-controller",
+  "version": "0.1.0",
+  "description": "Standalone desktop controller for the Philips Hue Play HDMI Sync Box",
+  "main": "src/main.js",
+  "author": "Sean Mackay",
+  "license": "UNLICENSED",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "dependencies": {
+    "auto-launch": "^5.0.6",
+    "electron-store": "^8.2.0"
+  },
+  "build": {
+    "appId": "com.seanmackay.huesynccontroller",
+    "productName": "SyncTroller",
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Utility",
+      "icon": "assets/icon.png"
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}

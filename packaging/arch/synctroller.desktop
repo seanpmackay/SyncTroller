@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=SyncTroller
+Comment=Standalone controller for the Philips Hue Play HDMI Sync Box
+Exec=/usr/bin/synctroller
+Icon=synctroller
+Terminal=false
+Categories=Utility;
+StartupWMClass=SyncTroller

@@ -1,0 +1,583 @@
+:root {
+  --bg: #0e0f12;
+  --surface: #17181c;
+  --surface-2: #1f2025;
+  --surface-3: #2a2b31;
+  --text: #f2f2f4;
+  --text-dim: #9a9aa2;
+  --text-dimmer: #6b6b73;
+  --accent-a: #4facfe;
+  --accent-b: #9d50ff;
+  --accent-grad: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  --danger: #ff5f57;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg) url("../../assets/background.png") no-repeat center center;
+  background-size: cover;
+  color: var(--text);
+  font-family: -apple-system, "Segoe UI", "Inter", Roboto, sans-serif;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ---------- Title bar ---------- */
+
+.titlebar {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  -webkit-app-region: drag;
+  background: transparent;
+}
+
+.titlebar-drag {
+  flex: 1;
+  padding-left: 14px;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.titlebar-title {
+  font-size: 12px;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.titlebar-buttons {
+  display: flex;
+  -webkit-app-region: no-drag;
+}
+
+.titlebar-btn {
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.titlebar-btn svg { width: 14px; height: 14px; fill: currentColor; }
+.titlebar-btn:hover { background: var(--surface-2); color: var(--text); }
+.titlebar-btn-close:hover { background: var(--danger); color: #fff; }
+
+/* ---------- Layout ---------- */
+
+#app {
+  height: calc(100% - 40px);
+  position: relative;
+}
+
+.view {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  padding: 24px;
+  animation: fadein 0.18s ease;
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+.view::-webkit-scrollbar { display: none; } /* Chromium/Electron */
+.view.active { display: flex; }
+
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.muted { color: var(--text-dim); }
+.small { font-size: 12px; }
+
+.btn {
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface-2);
+  color: var(--text);
+  transition: background 0.15s, transform 0.1s;
+}
+.btn:hover { background: var(--surface-3); }
+.btn:active { transform: scale(0.97); }
+.btn-primary { background: var(--accent-grad); color: #fff; }
+.btn-ghost { background: transparent; color: var(--text-dim); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.btn-danger { background: rgba(255,95,87,0.12); color: var(--danger); margin-top: 10px; }
+.btn-danger:hover { background: rgba(255,95,87,0.2); }
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-2);
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.icon-btn svg { width: 18px; height: 18px; fill: currentColor; }
+.icon-btn:hover { background: var(--surface-3); color: var(--text); }
+
+/* ---------- Pairing ---------- */
+
+.pairing-wrap {
+  margin: auto;
+  max-width: 320px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.pairing-logo { margin-bottom: 8px; }
+.sync-ring {
+  width: 80px; height: 80px; border-radius: 50%;
+  border: 6px solid transparent;
+  border-image: var(--accent-grad) 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.sync-dot { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-grad); }
+.pulse .sync-ring { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.08); opacity: 0.75; } }
+
+.pairing-wrap h1 { font-size: 18px; margin: 4px 0 0; }
+
+.pairing-list { width: 100%; display: flex; flex-direction: column; gap: 8px; margin: 8px 0; }
+.pairing-item {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface); border-radius: var(--radius-sm);
+  padding: 12px 16px; cursor: pointer; transition: background 0.15s;
+  width: 100%;
+}
+.pairing-item:hover { background: var(--surface-2); }
+.pairing-item-name { font-weight: 600; font-size: 14px; }
+.pairing-item-ip { color: var(--text-dimmer); font-size: 12px; }
+
+.pairing-manual { width: 100%; margin-top: 18px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; }
+.row { display: flex; gap: 8px; }
+input[type="text"] {
+  flex: 1; background: var(--surface); border: 1px solid var(--surface-3);
+  border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text); font-size: 14px;
+}
+input[type="text"]:focus { outline: none; border-color: var(--accent-a); }
+
+/* ---------- Main control view ---------- */
+
+.input-tile {
+  position: relative;
+  margin: 24px auto 20px;
+  width: 220px; height: 220px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-dim);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+  overflow: hidden;
+}
+
+.input-tile-icon { position: relative; z-index: 1; }
+
+/* Pulsing purple glow behind the icon while syncing -- same family of
+   colors as the app's background wallpaper, but animated so it's clearly
+   distinct from the static backdrop. */
+.input-tile::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  z-index: 0;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 50%, var(--accent-b) 0%, var(--accent-a) 35%, transparent 70%);
+  transition: opacity 0.3s;
+}
+.input-tile.syncing::before {
+  opacity: 0.55;
+  animation: tile-pulse 1.6s ease-in-out infinite;
+}
+@keyframes tile-pulse {
+  0%, 100% { transform: scale(0.85); opacity: 0.35; }
+  50% { transform: scale(1.05); opacity: 0.6; }
+}
+
+/* SVG icons (icons.js) default to black fill -- inherit surrounding text
+   color instead, and don't let their inline layout add stray whitespace. */
+svg { display: block; }
+.input-tile-icon svg,
+.control-pill-value svg,
+.bottom-btn-icon svg,
+.sheet-option-icon svg {
+  fill: currentColor;
+}
+
+.device-label { text-align: center; margin-bottom: 22px; }
+.device-label-name { font-size: 12px; letter-spacing: 0.08em; color: var(--text-dimmer); text-transform: uppercase; }
+.device-label-status { font-size: 20px; font-weight: 700; margin-top: 2px; }
+
+.control-row { display: flex; gap: 10px; justify-content: center; margin-bottom: auto; }
+.control-pill {
+  flex: 1; max-width: 110px;
+  background: var(--surface);
+  border: none; border-radius: 40px;
+  padding: 10px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer; color: var(--text);
+  transition: background 0.15s;
+}
+.control-pill:hover { background: var(--surface-2); }
+.control-pill-label { font-size: 9px; letter-spacing: 0.08em; color: var(--text-dimmer); }
+.control-pill-value { font-size: 18px; }
+
+.bottom-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 14px 22px;
+  margin-top: 14px;
+}
+.bottom-btn {
+  background: none; border: none; color: var(--text-dim);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  cursor: pointer; width: 76px;
+}
+.bottom-btn-icon { font-size: 20px; }
+.bottom-btn-label { font-size: 10px; letter-spacing: 0.06em; color: var(--text-dimmer); }
+.bottom-btn-sub { font-size: 11px; color: var(--text-dim); max-width: 76px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.sync-fab {
+  width: 62px; height: 62px; border-radius: 50%;
+  border: none; background: var(--accent-grad);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 4px 20px rgba(157,80,255,0.4);
+  transition: transform 0.12s;
+}
+.sync-fab:active { transform: scale(0.94); }
+.sync-fab svg { width: 26px; height: 26px; fill: #fff; }
+.sync-fab.active { animation: fab-pulse 1.6s ease-in-out infinite; }
+@keyframes fab-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(157,80,255,0.5), 0 4px 20px rgba(157,80,255,0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(157,80,255,0), 0 4px 26px rgba(157,80,255,0.6); }
+}
+
+/* ---------- Toggle switch ---------- */
+
+.switch { position: relative; display: inline-block; cursor: pointer; }
+.switch input { display: none; }
+.switch-track {
+  display: block; width: 46px; height: 26px; border-radius: 13px;
+  background: var(--surface-3); transition: background 0.2s; position: relative;
+}
+.switch-thumb {
+  position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+  border-radius: 50%; background: #fff; transition: transform 0.2s;
+}
+.switch input:checked + .switch-track { background: var(--accent-grad); }
+.switch input:checked + .switch-track .switch-thumb { transform: translateX(20px); }
+
+.switch-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+
+/* ---------- Settings ---------- */
+
+.settings-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.settings-header h2 { font-size: 16px; margin: 0; }
+
+.settings-section {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.settings-title { font-size: 11px; letter-spacing: 0.06em; color: var(--text-dimmer); text-transform: uppercase; margin-bottom: 10px; }
+.toggle-btn-row { display: block; cursor: pointer; }
+.toggle-btn-row input { display: none; }
+.toggle-btn-row:not(:last-child) { margin-bottom: 8px; }
+.toggle-btn {
+  display: block;
+  background: var(--surface-2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 13px; font-weight: 600;
+  color: var(--text-dim);
+  transition: background 0.15s, color 0.15s;
+}
+.toggle-btn-row:hover .toggle-btn { background: var(--surface-3); }
+.toggle-btn-row input:checked + .toggle-btn { background: var(--accent-grad); color: #fff; }
+/* .toggle-btn also gets used standalone (not inside a checkbox row) for
+   plain full-width actions -- e.g. "Pair a Hue Bridge", "Manage
+   entertainment areas" -- so they read as part of the same family as the
+   App behavior toggles instead of looking like a different kind of control. */
+button.toggle-btn { width: 100%; border: none; cursor: pointer; font-family: inherit; text-align: left; }
+button.toggle-btn:hover { background: var(--surface-3); }
+
+.settings-item-list { display: flex; flex-direction: column; gap: 8px; }
+.settings-item-row {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 10px;
+}
+.settings-item-icon-btn {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: var(--surface-3); border: none; color: var(--text-dim);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.settings-item-icon-btn:hover { color: var(--text); }
+.settings-item-row input[type="text"] { background: var(--surface); font-size: 13px; padding: 8px 10px; }
+
+/* ---------- Bottom sheet ---------- */
+
+.sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  display: none; align-items: flex-end; justify-content: center;
+}
+.sheet-overlay.active { display: flex; }
+.sheet {
+  width: 100%; background: var(--surface-2);
+  border-radius: 20px 20px 0 0;
+  padding: 20px;
+  max-height: 85vh;
+  overflow-y: auto;
+  animation: slideup 0.18s ease;
+}
+@keyframes slideup { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.sheet-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; text-align: center; }
+/* Fixed-size squares, centered as a group -- NOT a stretching 1fr grid.
+   With 4 options they naturally fill the row; with fewer, they stay the
+   same size and sit centered with even space on both sides instead of
+   stretching to fill (confirmed live: a single WHERE option under a
+   stretching grid became one giant square spanning the whole sheet). Wraps
+   onto multiple centered rows for longer lists (the icon picker). */
+.sheet-options { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.sheet-option {
+  flex: 0 0 64px;
+  width: 64px; height: 64px;
+  background: var(--surface); border: 2px solid transparent; border-radius: var(--radius-sm);
+  padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  cursor: pointer; color: var(--text-dim); font-size: 10px; font-weight: 600; text-align: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.sheet-option-icon { font-size: 22px; }
+.sheet-option.selected { border-color: var(--accent-a); color: var(--text); background: var(--surface-3); }
+.sheet-slider-wrap { margin-top: 16px; }
+input[type="range"] {
+  width: 100%; accent-color: var(--accent-a);
+}
+
+/* Centered dialog variant of the same overlay (confirm prompts) instead of
+   the bottom slide-up sheet -- a small fixed-width card, not full-width. */
+.sheet-overlay.dialog-overlay { align-items: center; }
+.dialog-sheet {
+  width: auto; max-width: 280px; margin: 0 16px;
+  border-radius: 16px;
+  animation: fadein 0.15s ease;
+}
+
+/* ---------- Entertainment area edit ---------- */
+
+.entarea-lights-header { display: flex; align-items: center; gap: 10px; }
+
+.entarea-name-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 18px;
+}
+.entarea-name-icon {
+  width: 52px; height: 52px; border-radius: var(--radius-sm); flex-shrink: 0;
+  background: var(--surface); color: var(--text-dim);
+  display: flex; align-items: center; justify-content: center;
+}
+.entarea-name-icon svg { fill: currentColor; }
+#entarea-name-input { font-size: 16px; font-weight: 700; padding: 12px 14px; }
+
+.entarea-placement-row { cursor: pointer; margin-top: 4px; }
+.entarea-placement-row:hover { background: var(--surface-3); }
+
+/* ---------- Light placement ---------- */
+
+/* A real 3D room (CSS 3D transforms, not a flat illustration): a vertical
+   back wall (TV + speakers) and a floor folded down 90 degrees from it, so
+   the floor actually recedes in perspective instead of just being drawn as
+   a foreshortened rectangle. Each light is an independent object in that
+   same 3D space (translate3d, not nested inside the rotated floor -- a
+   light nested in the floor inherits ITS rotation and renders as a flat
+   squashed ellipse lying on the floor instead of a sphere standing above
+   it), rendered as a pole rising from its floor point to a ball at its
+   height. */
+.room3d-wrap {
+  position: relative;
+  width: 100%; height: 220px;
+  perspective: 700px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+  touch-action: none;
+}
+/* Three stages, not one -- the room shell (walls/floor/ceiling), the
+   furniture (TV + couch), and the lights are each rendered as separate
+   stacking contexts (any transformed element is one) that happen to share
+   the exact same size/position/camera transform, so they overlap
+   pixel-for-pixel. This is deliberate: browsers don't reliably depth-sort
+   an element against another one that spans a wide range of depth values
+   in the same preserve-3d group -- confirmed live three times (lights vs.
+   the floor, the TV vs. a side wall, then lights vs. the TV once it moved
+   into their shared layer). As separate flat layers instead, each later
+   one always paints fully on top of the previous, full stop, no
+   per-element 3D sort between any of them. */
+.room3d-stage, .room3d-objects-stage, .room3d-lights-stage {
+  position: absolute; top: 50%; left: 50%;
+  width: 220px; height: 220px; margin-left: -110px; margin-top: -110px;
+  transform-style: preserve-3d;
+  transform: rotateX(-24deg);
+}
+.room3d-objects-stage, .room3d-lights-stage { pointer-events: none; }
+.room3d-objects-stage .room3d-couch,
+.room3d-objects-stage .room3d-tv,
+.room3d-lights-stage .room3d-light { pointer-events: auto; }
+.room3d-reset-view {
+  position: absolute; top: 8px; right: 8px; z-index: 1;
+  width: 30px; height: 30px;
+  background: rgba(0,0,0,0.35);
+}
+.room3d-back-wall {
+  position: absolute; left: 50%; top: 50%;
+  width: 220px; height: 120px; margin-left: -110px; margin-top: -60px;
+  background: var(--surface-3);
+  transform: translateZ(-90px);
+}
+/* Left/right walls -- turned to face inward (rotateY) and pushed out to the
+   room's side edges, closing the box instead of leaving it open at the
+   sides. Semi-transparent so the room doesn't feel cramped/claustrophobic
+   at this size. */
+.room3d-side-wall {
+  position: absolute; left: 50%; top: 50%;
+  width: 180px; height: 120px; margin-left: -90px; margin-top: -60px;
+  background: var(--surface-2);
+  opacity: 0.55;
+  pointer-events: none;
+}
+.room3d-side-wall-left { transform: rotateY(90deg) translateZ(-110px); }
+.room3d-side-wall-right { transform: rotateY(-90deg) translateZ(-110px); }
+/* A faint ceiling plane -- mainly so raising a light to near-max height
+   visibly reads as "near the ceiling" against something, instead of just
+   trailing off into empty space above the back wall. */
+.room3d-ceiling {
+  position: absolute; left: 50%; top: 50%;
+  width: 220px; height: 180px; margin-left: -110px; margin-top: -90px;
+  background: rgba(255,255,255,0.05);
+  transform: rotateX(90deg) translateZ(60px);
+  pointer-events: none;
+}
+/* Lives on the lights-stage (see that comment) as an independent 3D
+   object positioned via translate3d, same pattern as a light/the couch --
+   NOT nested in .room3d-back-wall, which is what let the side wall paint
+   over it once dragged near the room's edge. Fixed px size (not a
+   percentage of the wall) since its position is now set entirely in JS. */
+.room3d-tv {
+  position: absolute; left: 50%; top: 50%;
+  width: 136px; aspect-ratio: 16 / 9;
+  background: #000; border: 3px solid var(--surface-3); border-radius: 4px;
+  cursor: grab;
+}
+.room3d-tv:active { cursor: grabbing; }
+.room3d-speaker {
+  position: absolute; top: 22%; width: 9%; height: 60%;
+  background: var(--surface-3); border-radius: 3px;
+}
+.room3d-speaker-left { left: 4%; }
+.room3d-speaker-right { right: 4%; }
+/* translateZ(-60px), NOT -90 -- the floor is built the same way as the
+   ceiling (a flat rectangle folded 90 degrees by its rotateX), and for it
+   to actually meet the back wall's bottom edge (which sits at +60px, since
+   the wall is centered on the stage and is 120px tall) the fold's pivot
+   depth has to match that +60, not the wall's own -90 z-depth -- those are
+   two different numbers that happened to look similar enough to conflate.
+   Getting this wrong left a ~30px gap between the wall and the floor. */
+.room3d-floor {
+  position: absolute; left: 50%; top: 50%;
+  width: 220px; height: 180px; margin-left: -110px; margin-top: -90px;
+  background: var(--surface); border-radius: 6px;
+  transform: rotateX(90deg) translateZ(-60px);
+}
+/* The couch is a real 3D object (an independent room object, like a light --
+   see .room3d-light-ball), not a flat sticker on the floor. A seat plane
+   (folded flat like the floor) plus an upright backrest and two armrests
+   (plain vertical panels, like the walls) so that as the room is rotated,
+   which side is the backrest (its "back") vs. the open seat (its "front")
+   is actually visible, instead of looking identical from every angle the
+   way a flat 2D shape would. */
+.room3d-couch { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; cursor: grab; }
+.room3d-couch:active { cursor: grabbing; }
+.room3d-couch-seat {
+  position: absolute; left: -27px; top: -18px; width: 54px; height: 36px;
+  background: var(--surface-2); border-radius: 6px;
+  transform: rotateX(90deg) translateZ(8px);
+}
+.room3d-couch-backrest {
+  position: absolute; left: -27px; top: -38px; width: 54px; height: 24px;
+  background: var(--surface-3); border-radius: 8px 8px 2px 2px;
+  transform: translateZ(18px);
+}
+.room3d-couch-armrest {
+  position: absolute; top: -30px; width: 8px; height: 22px;
+  background: var(--surface-3); border-radius: 4px;
+  transform: translateZ(4px);
+}
+.room3d-couch-armrest-left { left: -31px; }
+.room3d-couch-armrest-right { left: 23px; }
+
+.room3d-light { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
+.room3d-light-pole {
+  position: absolute; left: -1px; bottom: 0; width: 2px;
+  background: rgba(255,255,255,0.4);
+}
+/* preserve-3d here matters -- without it, the ball's own counter-rotation
+   (billboarding, see applyBallBillboard() in renderer.js) gets flattened
+   by this parent instead of composing correctly, and the ball collapses
+   to an invisible edge-on sliver at some camera angles (confirmed live). */
+.room3d-light-ball-offset { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; }
+.room3d-light-ball {
+  position: absolute; left: -10px; top: -10px; width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.85);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  cursor: grab;
+}
+.room3d-light-ball:active { cursor: grabbing; }
+.room3d-light-ball.current { box-shadow: 0 0 0 4px rgba(255,255,255,0.25), 0 2px 8px rgba(0,0,0,0.4); }
+
+/* Generic "identify" pulse -- reused on a room ball (clicked in the 3D
+   placement view or its legend) and on a light row's icon (toggled on or
+   clicked in the Edit Area lights list), so both places confirm which
+   light you just acted on the same way. */
+.pulse-identify { animation: identify-pulse 0.35s ease-in-out 5; }
+@keyframes identify-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.5); }
+}
+
+/* Grid, not flex-wrap -- flex-wrap packed items by their own text width,
+   so shorter names ("Right TV") sat at a different indent than longer ones
+   ("Basement Light 4") depending on what happened to share their row. A
+   fixed 2-column grid keeps every item's left edge aligned. */
+.placement-legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.placement-legend-item {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 2px solid transparent; border-radius: var(--radius-sm);
+  padding: 8px 12px; font-size: 12px; font-weight: 600; color: var(--text-dim);
+  cursor: pointer; overflow: hidden;
+}
+.placement-legend-item span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.placement-legend-item.current { border-color: var(--accent-a); color: var(--text); }
+.placement-legend-swatch { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }

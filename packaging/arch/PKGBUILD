@@ -1,43 +1,45 @@
-# Maintainer: Sean MacKay
+# Maintainer: Sean MacKay <sean.p.mackay@gmail.com>
 #
-# This is a LOCAL-only package -- it builds from the electron-builder output
-# already produced in this checkout (../../dist/linux-unpacked), not from a
-# fetched source tarball, since this is a personal project with no public
-# repo. Build/install it on this machine with:
+# Binary package built from the prebuilt electron-builder tarball attached to
+# each GitHub release. To publish a new version to the AUR:
 #
-#   cd packaging/arch && makepkg -si
-#
-# Rebuild `npm run dist` in the project root first if the app's source has
-# changed -- this PKGBUILD just repackages whatever is already in
-# dist/linux-unpacked, it doesn't run the Electron build itself. Not meant
-# for submission to the real AUR as-is (no source tarball/checksums, and the
-# path below is specific to this machine).
+#   1. npm run dist && gh release create v<ver> dist/SyncTroller-<ver>.{AppImage,tar.gz}
+#   2. bump pkgver, reset pkgrel=1, run `updpkgsums`
+#   3. makepkg --printsrcinfo > .SRCINFO
+#   4. commit + push in the AUR clone (ssh://aur@aur.archlinux.org/synctroller-bin.git)
 
-pkgname=synctroller
+pkgname=synctroller-bin
+_pkgname=synctroller
 pkgver=1.2.0
 pkgrel=1
 pkgdesc="Standalone desktop controller for the Philips Hue Play HDMI Sync Box"
 arch=('x86_64')
-license=('custom')
-depends=('gtk3' 'nss' 'libxss' 'libxtst' 'at-spi2-core' 'libdrm' 'mesa' 'alsa-lib' 'nspr')
+url="https://github.com/seanpmackay/SyncTroller"
+license=('MIT')
+depends=('gtk3' 'nss' 'libxss' 'libxtst' 'at-spi2-core' 'libdrm' 'mesa' 'alsa-lib' 'nspr' 'libnotify')
+provides=("$_pkgname")
+conflicts=("$_pkgname")
 options=('!strip' '!emptydirs')
-
-_projectdir=/home/sean/projects/hue-sync-controller
+source=("SyncTroller-$pkgver.tar.gz::$url/releases/download/v$pkgver/SyncTroller-$pkgver.tar.gz"
+        "LICENSE-$pkgver::https://raw.githubusercontent.com/seanpmackay/SyncTroller/v$pkgver/LICENSE"
+        "icon-$pkgver.png::https://raw.githubusercontent.com/seanpmackay/SyncTroller/v$pkgver/assets/icon.png"
+        "$_pkgname.desktop")
+sha256sums=('SKIP'
+            'SKIP'
+            'SKIP'
+            'SKIP')
 
 package() {
-  if [ ! -d "$_projectdir/dist/linux-unpacked" ]; then
-    echo "ERROR: $_projectdir/dist/linux-unpacked not found -- run 'npm run dist' in the project first." >&2
-    return 1
-  fi
-
-  install -dm755 "$pkgdir/opt/synctroller"
-  cp -a "$_projectdir/dist/linux-unpacked/." "$pkgdir/opt/synctroller/"
+  install -dm755 "$pkgdir/opt/$_pkgname"
+  cp -a "$srcdir/SyncTroller-$pkgver/." "$pkgdir/opt/$_pkgname/"
 
   install -dm755 "$pkgdir/usr/bin"
-  ln -s /opt/synctroller/hue-sync-controller "$pkgdir/usr/bin/synctroller"
+  ln -s "/opt/$_pkgname/hue-sync-controller" "$pkgdir/usr/bin/$_pkgname"
 
-  install -Dm644 "$_projectdir/packaging/arch/synctroller.desktop" \
-    "$pkgdir/usr/share/applications/synctroller.desktop"
-  install -Dm644 "$_projectdir/assets/icon.png" \
-    "$pkgdir/usr/share/icons/hicolor/256x256/apps/synctroller.png"
+  install -Dm644 "$srcdir/$_pkgname.desktop" \
+    "$pkgdir/usr/share/applications/$_pkgname.desktop"
+  install -Dm644 "$srcdir/icon-$pkgver.png" \
+    "$pkgdir/usr/share/icons/hicolor/256x256/apps/$_pkgname.png"
+
+  install -Dm644 "$srcdir/LICENSE-$pkgver" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
 }

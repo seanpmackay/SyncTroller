@@ -269,6 +269,9 @@
       <p class="muted small" id="placement-hint" style="text-align:center; margin-top:0">Drag a light to move it &middot; scroll to change height &middot; drag the room to rotate the view</p>
 
       <div class="room3d-wrap" id="room3d-wrap">
+        <button id="btn-room-undo" class="icon-btn room3d-undo" title="Undo last move" style="display:none">
+          <svg viewBox="0 0 24 24"><path d="M12.5 8c-2.65 0-5.05.99-6.9 2.6L2 7v9h9l-3.62-3.62c1.39-1.16 3.16-1.88 5.12-1.88 3.54 0 6.55 2.31 7.6 5.5l2.37-.78C21.08 11.03 17.15 8 12.5 8Z"/></svg>
+        </button>
         <button id="btn-room-reset-view" class="icon-btn room3d-reset-view" title="Reset view">
           <svg viewBox="0 0 24 24"><path d="M12 5V2L8 6l4 4V7c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 13c0-4.42-3.58-8-8-8Zm0 13c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 13c0 4.42 3.58 8 8 8v3l4-4-4-4v3Z"/></svg>
         </button>
@@ -310,6 +313,16 @@
       <div class="sheet-title" id="sheet-title">Mode</div>
       <div class="sheet-options" id="sheet-options"></div>
       <div class="sheet-slider-wrap" id="sheet-slider-wrap" style="display:none">
+        <!-- Badge is a sibling of brightness-pill, not a child of it --
+             brightness-pill needs overflow:hidden to clip the fill
+             rectangle to its own rounded shape, which would also clip the
+             badge whenever it floats above the pill's own top edge (at/
+             near 100%) if it lived inside instead. -->
+        <div class="brightness-badge" id="brightness-badge">100%</div>
+        <div class="brightness-pill" id="brightness-pill">
+          <div class="brightness-fill" id="brightness-fill"></div>
+          <div class="brightness-icon" id="brightness-sun-icon"></div>
+        </div>
         <input type="range" id="sheet-slider" min="0" max="200" />
       </div>
     </div>

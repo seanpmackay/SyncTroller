@@ -119,6 +119,12 @@ html, body {
 .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 .btn-danger { background: rgba(255,95,87,0.12); color: var(--danger); margin-top: 10px; }
 .btn-danger:hover { background: rgba(255,95,87,0.2); }
+/* ---------- Full-width danger buttons ---------- */
+.settings-section .btn-danger,
+#view-bridge-detail .btn-danger,
+#view-entarea-edit .btn-danger {
+  width: 100%;
+}
 
 .icon-btn {
   width: 34px;
@@ -377,6 +383,95 @@ input[type="range"] {
   width: 100%; accent-color: var(--accent-a);
 }
 
+/* ---------- Brightness: a custom vertical pill, not the raw <input
+   type="range"> ---------- (see renderer.js's brightness-pill IIFE)
+
+   The visible control is a custom vertical pill (percentage badge, fill
+   rising from the bottom, icon anchored at the bottom) built and driven
+   entirely by that IIFE -- #sheet-slider itself is kept in the DOM (just
+   hidden) purely as the value the rest of renderer.js already reads on
+   open and writes on change via its own 'input' listener; the pill only
+   ever sets .value and dispatches a real Event('input') on it, so that
+   existing debounced update path needs no changes at all. */
+#sheet-slider { display: none; }
+
+/* ---------- Brightness: grows up out of its own button ----------
+   Matches the official Hue Sync app's own brightness control: the shared
+   pill-brightness click handler still opens the shared sheet-overlay/sheet
+   the same as every other pill (Mode/Intensity/What/Where) -- the
+   brightness-pill IIFE repositions/resizes that same .sheet, only while
+   brightness is what it's showing, to keep #pill-brightness's own left/
+   width/bottom edge and grow the height upward from there (animated -- see
+   positionPopover() in renderer.js), instead of the usual full-width
+   bottom sheet. The effect is the button visibly extending into a tall
+   slider in place, not a separate popup appearing near/over it. */
+#sheet-overlay.brightness-popover {
+  background: rgba(0,0,0,0.25);
+}
+#sheet-overlay.brightness-popover .sheet {
+  position: fixed;
+  padding: 0;
+  border-radius: 26px;
+  background: var(--surface);
+  max-height: none;
+  overflow: visible;
+  animation: fadein 0.15s ease;
+}
+#sheet-overlay.brightness-popover .sheet-title { display: none; }
+
+#sheet-slider-wrap[style*="block"] {
+  position: relative;
+  width: 100%; height: 100%;
+}
+.brightness-pill {
+  position: relative;
+  width: 100%; height: 100%;
+  border-radius: 26px;
+  background: var(--surface);
+  overflow: hidden;
+  touch-action: none;
+}
+/* The "on" portion. --accent-grad is a generated gradient, not a fixed-
+   resolution photo, so it always renders fitted to *this* box's current
+   size, which is what guarantees a uniformly "lit" look reaching every
+   edge at 100%. Height is set inline by renderer.js as a fraction of the
+   pill. */
+.brightness-fill {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 50%;
+  background: var(--accent-grad);
+  border-top: 1px solid rgba(255,255,255,0.3);
+}
+.brightness-icon {
+  position: absolute;
+  left: 50%; bottom: 14px;
+  transform: translateX(-50%);
+  color: #fff;
+  z-index: 1;
+}
+.brightness-icon svg { width: 22px; height: 22px; fill: currentColor; }
+/* A sibling of .brightness-pill, not a child (see index.html) -- floats
+   just above the current fill line (bottom set inline by renderer.js),
+   including above the pill's own top edge near 100%, which .brightness-
+   pill's own overflow:hidden would otherwise clip if this lived inside
+   it. */
+.brightness-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  transform: translate(-50%, 50%);
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
 /* Centered dialog variant of the same overlay (confirm prompts) instead of
    the bottom slide-up sheet -- a small fixed-width card, not full-width. */
 .sheet-overlay.dialog-overlay { align-items: center; }
@@ -418,8 +513,8 @@ input[type="range"] {
    height. */
 .room3d-wrap {
   position: relative;
-  width: 100%; height: 220px;
-  perspective: 700px;
+  width: 100%; height: 352px;
+  perspective: 1120px;
   border-radius: var(--radius);
   overflow: hidden;
   background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
@@ -438,7 +533,7 @@ input[type="range"] {
    per-element 3D sort between any of them. */
 .room3d-stage, .room3d-objects-stage, .room3d-lights-stage {
   position: absolute; top: 50%; left: 50%;
-  width: 220px; height: 220px; margin-left: -110px; margin-top: -110px;
+  width: 352px; height: 352px; margin-left: -176px; margin-top: -176px;
   transform-style: preserve-3d;
   transform: rotateX(-24deg);
 }
@@ -447,15 +542,20 @@ input[type="range"] {
 .room3d-objects-stage .room3d-tv,
 .room3d-lights-stage .room3d-light { pointer-events: auto; }
 .room3d-reset-view {
-  position: absolute; top: 8px; right: 8px; z-index: 1;
-  width: 30px; height: 30px;
+  position: absolute; top: 13px; right: 13px; z-index: 1;
+  width: 48px; height: 48px;
+  background: rgba(0,0,0,0.35);
+}
+.room3d-undo {
+  position: absolute; top: 13px; right: 69px; z-index: 1;
+  width: 48px; height: 48px;
   background: rgba(0,0,0,0.35);
 }
 .room3d-back-wall {
   position: absolute; left: 50%; top: 50%;
-  width: 220px; height: 120px; margin-left: -110px; margin-top: -60px;
+  width: 352px; height: 192px; margin-left: -176px; margin-top: -96px;
   background: var(--surface-3);
-  transform: translateZ(-90px);
+  transform: translateZ(-144px);
 }
 /* Left/right walls -- turned to face inward (rotateY) and pushed out to the
    room's side edges, closing the box instead of leaving it open at the
@@ -463,21 +563,21 @@ input[type="range"] {
    at this size. */
 .room3d-side-wall {
   position: absolute; left: 50%; top: 50%;
-  width: 180px; height: 120px; margin-left: -90px; margin-top: -60px;
+  width: 288px; height: 192px; margin-left: -144px; margin-top: -96px;
   background: var(--surface-2);
   opacity: 0.55;
   pointer-events: none;
 }
-.room3d-side-wall-left { transform: rotateY(90deg) translateZ(-110px); }
-.room3d-side-wall-right { transform: rotateY(-90deg) translateZ(-110px); }
+.room3d-side-wall-left { transform: rotateY(90deg) translateZ(-176px); }
+.room3d-side-wall-right { transform: rotateY(-90deg) translateZ(-176px); }
 /* A faint ceiling plane -- mainly so raising a light to near-max height
    visibly reads as "near the ceiling" against something, instead of just
    trailing off into empty space above the back wall. */
 .room3d-ceiling {
   position: absolute; left: 50%; top: 50%;
-  width: 220px; height: 180px; margin-left: -110px; margin-top: -90px;
+  width: 352px; height: 288px; margin-left: -176px; margin-top: -144px;
   background: rgba(255,255,255,0.05);
-  transform: rotateX(90deg) translateZ(60px);
+  transform: rotateX(90deg) translateZ(96px);
   pointer-events: none;
 }
 /* Lives on the lights-stage (see that comment) as an independent 3D
@@ -487,29 +587,36 @@ input[type="range"] {
    percentage of the wall) since its position is now set entirely in JS. */
 .room3d-tv {
   position: absolute; left: 50%; top: 50%;
-  width: 136px; aspect-ratio: 16 / 9;
-  background: #000; border: 3px solid var(--surface-3); border-radius: 4px;
+  width: 218px; aspect-ratio: 16 / 9;
+  background: #000; border: 5px solid var(--surface-3); border-radius: 4px;
   cursor: grab;
 }
 .room3d-tv:active { cursor: grabbing; }
+/* A first tap arms the TV for moving (see renderer.js) without moving it
+   yet -- this is the only visual sign that it's now draggable. */
+.room3d-tv.selected { border-color: var(--accent-a); }
 .room3d-speaker {
   position: absolute; top: 22%; width: 9%; height: 60%;
   background: var(--surface-3); border-radius: 3px;
 }
 .room3d-speaker-left { left: 4%; }
 .room3d-speaker-right { right: 4%; }
-/* translateZ(-60px), NOT -90 -- the floor is built the same way as the
+/* translateZ(-96px), NOT -144 -- the floor is built the same way as the
    ceiling (a flat rectangle folded 90 degrees by its rotateX), and for it
-   to actually meet the back wall's bottom edge (which sits at +60px, since
-   the wall is centered on the stage and is 120px tall) the fold's pivot
-   depth has to match that +60, not the wall's own -90 z-depth -- those are
+   to actually meet the back wall's bottom edge (which sits at +96px, since
+   the wall is centered on the stage and is 192px tall) the fold's pivot
+   depth has to match that +96, not the wall's own -144 z-depth -- those are
    two different numbers that happened to look similar enough to conflate.
-   Getting this wrong left a ~30px gap between the wall and the floor. */
+   Getting this wrong left a gap between the wall and the floor. (All of
+   this room's pixel values scale together as one unit -- see
+   ROOM_HALF_WIDTH etc. in renderer.js -- so this relationship, and every
+   other one documented in this file, holds at any size as long as every
+   value here and there is scaled by the same factor.) */
 .room3d-floor {
   position: absolute; left: 50%; top: 50%;
-  width: 220px; height: 180px; margin-left: -110px; margin-top: -90px;
+  width: 352px; height: 288px; margin-left: -176px; margin-top: -144px;
   background: var(--surface); border-radius: 6px;
-  transform: rotateX(90deg) translateZ(-60px);
+  transform: rotateX(90deg) translateZ(-96px);
 }
 /* The couch is a real 3D object (an independent room object, like a light --
    see .room3d-light-ball), not a flat sticker on the floor. A seat plane
@@ -520,27 +627,31 @@ input[type="range"] {
    way a flat 2D shape would. */
 .room3d-couch { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; cursor: grab; }
 .room3d-couch:active { cursor: grabbing; }
+/* A first tap arms the couch for moving (see renderer.js) without moving
+   it yet -- brightening it (it has no single background of its own to
+   recolor, unlike the TV/a light) is the only visual sign it's armed. */
+.room3d-couch.selected { filter: brightness(1.5); }
 .room3d-couch-seat {
-  position: absolute; left: -27px; top: -18px; width: 54px; height: 36px;
+  position: absolute; left: -43.2px; top: -28.8px; width: 86.4px; height: 57.6px;
   background: var(--surface-2); border-radius: 6px;
-  transform: rotateX(90deg) translateZ(8px);
+  transform: rotateX(90deg) translateZ(12.8px);
 }
 .room3d-couch-backrest {
-  position: absolute; left: -27px; top: -38px; width: 54px; height: 24px;
+  position: absolute; left: -43.2px; top: -60.8px; width: 86.4px; height: 38.4px;
   background: var(--surface-3); border-radius: 8px 8px 2px 2px;
-  transform: translateZ(18px);
+  transform: translateZ(28.8px);
 }
 .room3d-couch-armrest {
-  position: absolute; top: -30px; width: 8px; height: 22px;
+  position: absolute; top: -48px; width: 12.8px; height: 35.2px;
   background: var(--surface-3); border-radius: 4px;
-  transform: translateZ(4px);
+  transform: translateZ(6.4px);
 }
-.room3d-couch-armrest-left { left: -31px; }
-.room3d-couch-armrest-right { left: 23px; }
+.room3d-couch-armrest-left { left: -49.6px; }
+.room3d-couch-armrest-right { left: 36.8px; }
 
 .room3d-light { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transform-style: preserve-3d; }
 .room3d-light-pole {
-  position: absolute; left: -1px; bottom: 0; width: 2px;
+  position: absolute; left: -1.6px; bottom: 0; width: 3.2px;
   background: rgba(255,255,255,0.4);
 }
 /* preserve-3d here matters -- without it, the ball's own counter-rotation
@@ -549,8 +660,8 @@ input[type="range"] {
    to an invisible edge-on sliver at some camera angles (confirmed live). */
 .room3d-light-ball-offset { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-style: preserve-3d; }
 .room3d-light-ball {
-  position: absolute; left: -10px; top: -10px; width: 20px; height: 20px; border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.85);
+  position: absolute; left: -16px; top: -16px; width: 32px; height: 32px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,0.85);
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);
   cursor: grab;
 }

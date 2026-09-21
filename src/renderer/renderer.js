@@ -299,21 +299,196 @@ function scheduleBrightnessUpdate(value) {
 
 sheetSlider.addEventListener('input', (e) => scheduleBrightnessUpdate(Number(e.target.value)));
 
-// Touchpad/mouse-wheel scroll support -- no visible +/- stepper buttons,
-// just scroll while hovering the slider. deltaY is negative when scrolling
-// up/away (increase), positive scrolling down/toward you (decrease).
-sheetSlider.addEventListener(
-  'wheel',
-  (e) => {
+// ---- Brightness pill (see .brightness-pill in style.css) ----
+//
+// A vertical fill-from-the-bottom pill with a floating percentage badge,
+// matching the reference iOS-style brightness/volume control -- driven
+// entirely by pointer events here (pointer events fire for mouse drags
+// too, not just touch, which is why this replaced the plain <input
+// type="range"> on both desktop and Android rather than staying an
+// Android-only override). #sheet-slider (the original range input, see
+// index.html, now hidden) is kept as the actual value: this only ever
+// reads its .value to draw the pill, and on drag sets .value and
+// dispatches a real 'input' event so scheduleBrightnessUpdate() above
+// fires exactly as it always has, unchanged.
+// Only used by positionPopover() below now, to actually size the sheet --
+// render() used to also assume the pill's rendered height always exactly
+// equals this constant (computing the fill/badge in pixels from it), which
+// didn't reliably hold in practice (confirmed live: the fill visibly fell
+// short of the pill's real top edge even at 100%). render() now sizes both
+// in CSS percent/max() instead, which is correct against whatever the
+// pill's real height renders as, with no assumption needed at all.
+// Reference pairing this aspect ratio is tuned against: Android's own
+// #pill-brightness (a fixed 122px square, see .control-pill in
+// android.css) at this height read well there, confirmed live -- kept
+// as its own pair of constants (not read off the anchor) so the ratio
+// stays fixed even though the actual target width below can be smaller.
+const BRIGHTNESS_REF_WIDTH = 122;
+const BRIGHTNESS_REF_HEIGHT = 240;
+// Floor for platforms whose own anchor renders narrower than this (e.g.
+// desktop's compact oval control-pill, ~90px in the 340px window) --
+// Android's 122px anchor already exceeds it, so this never touches
+// Android's own sizing (Math.max(122, 100) is just 122, unchanged).
+// Confirmed live 2026-09-20 that using BRIGHTNESS_REF_WIDTH itself here
+// (i.e. matching Android's width exactly) made the popover feel far too
+// large against desktop's much smaller window and UI -- this floor sits
+// deliberately below that reference instead.
+const BRIGHTNESS_POPOVER_MIN_WIDTH = 100;
+
+(function () {
+  const pill = document.getElementById('brightness-pill');
+  const fill = document.getElementById('brightness-fill');
+  const badge = document.getElementById('brightness-badge');
+  const icon = document.getElementById('brightness-sun-icon');
+  const slider = document.getElementById('sheet-slider');
+  if (!pill || !slider) return;
+
+  if (icon) icon.innerHTML = svgIcon('sun', 24);
+
+  const MIN = Number(slider.min) || 0;
+  const MAX = Number(slider.max) || 200;
+
+  function render(value) {
+    const frac = Math.min(1, Math.max(0, (value - MIN) / (MAX - MIN)));
+    // A CSS percentage of .brightness-pill's own current height -- always
+    // correct regardless of what that height actually renders as, with no
+    // assumption needed (see style.css's comment on .brightness-fill for
+    // why a fixed-resolution background image here couldn't guarantee a
+    // uniformly "full" look at 100% the way a gradient does).
+    fill.style.height = frac * 100 + '%';
+    // Floats 14px above the fill line; never closer than 20px to the
+    // bottom (near 0%). max() mixes the % and the px cleanly without
+    // needing to know the pill's actual pixel height either.
+    badge.style.bottom = 'max(20px, calc(' + frac * 100 + '% + 14px))';
+    badge.textContent = Math.round(frac * 100) + '%';
+  }
+
+  function valueFromClientY(clientY) {
+    const rect = pill.getBoundingClientRect();
+    let frac = 1 - (clientY - rect.top) / rect.height;
+    frac = Math.min(1, Math.max(0, frac));
+    return Math.round(MIN + frac * (MAX - MIN));
+  }
+
+  function setValue(value) {
+    slider.value = value;
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    render(value);
+  }
+
+  pill.addEventListener('pointerdown', (e) => {
+    // Matches the 3D placement view's own drag handlers (ball/TV/couch) --
+    // touch-action:none on the pill already stops the browser's own pan/
+    // scroll gesture recognition, but preventDefault() here too rules out
+    // any other default touch handling (e.g. a long-press) competing with
+    // the drag, same as those.
     e.preventDefault();
-    const step = 4;
-    const direction = e.deltaY < 0 ? 1 : -1;
-    const next = Math.min(200, Math.max(0, Number(sheetSlider.value) + direction * step));
-    sheetSlider.value = next;
-    scheduleBrightnessUpdate(next);
-  },
-  { passive: false }
-);
+    pill.setPointerCapture(e.pointerId);
+    setValue(valueFromClientY(e.clientY));
+    const move = (ev) => setValue(valueFromClientY(ev.clientY));
+    const up = () => {
+      pill.removeEventListener('pointermove', move);
+      pill.removeEventListener('pointerup', up);
+    };
+    pill.addEventListener('pointermove', move);
+    pill.addEventListener('pointerup', up);
+  });
+
+  // Touchpad/mouse-wheel scroll support on desktop -- no visible +/-
+  // stepper buttons, just scroll while hovering the pill. deltaY is
+  // negative when scrolling up/away (increase), positive scrolling down/
+  // toward you (decrease). Lives on the pill now (not the hidden
+  // #sheet-slider) since a display:none element never receives a wheel
+  // event in the first place.
+  pill.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      const step = 4;
+      const direction = e.deltaY < 0 ? 1 : -1;
+      const next = Math.min(MAX, Math.max(MIN, Number(slider.value) + direction * step));
+      setValue(next);
+    },
+    { passive: false }
+  );
+
+  // Grows the sheet itself (not just the pill) up out of #pill-brightness,
+  // matching the official Hue Sync app's own brightness control: it keeps
+  // the button's left/width/bottom edge exactly where the button was and
+  // extends upward, rather than either replacing it at the same small size
+  // or floating separately above it. Setting the small (button-sized) rect
+  // first with transitions off, forcing a reflow, then animating to the
+  // tall rect is what makes it visibly grow instead of just appearing.
+  const overlay = document.getElementById('sheet-overlay');
+  const sheetBox = overlay ? overlay.querySelector('.sheet') : null;
+  function positionPopover() {
+    const anchorBtn = document.getElementById('pill-brightness');
+    if (!anchorBtn || !sheetBox) return;
+    const rect = anchorBtn.getBoundingClientRect();
+    sheetBox.style.transition = 'none';
+    sheetBox.style.left = Math.round(rect.left) + 'px';
+    sheetBox.style.width = Math.round(rect.width) + 'px';
+    sheetBox.style.top = Math.round(rect.top) + 'px';
+    sheetBox.style.height = Math.round(rect.height) + 'px';
+    void sheetBox.offsetHeight; // force layout before re-enabling the transition
+    sheetBox.style.transition = 'top 0.18s ease, height 0.18s ease, left 0.18s ease, width 0.18s ease';
+    // #pill-brightness's own width varies a lot by platform (a narrow oval
+    // on desktop's compact control-row vs. a much wider square on Android's
+    // full-width one, see .control-pill) -- widening to a fixed comfortable
+    // width here, centered on the button's own horizontal center rather
+    // than staying flush-left at whatever the button's real width happens
+    // to be, is what keeps the slider a consistent, comfortably-sized shape
+    // on both instead of desktop's ending up an oddly narrow vertical
+    // strip. Height then scales with whatever that target width ends up
+    // being, at the same ratio as the reference pairing above, rather than
+    // a flat height constant -- on Android, where the anchor's own width
+    // already equals BRIGHTNESS_REF_WIDTH, this comes out to exactly
+    // BRIGHTNESS_REF_HEIGHT (unchanged); on desktop's narrower window it
+    // shrinks both dimensions together instead of leaving a now-too-tall
+    // slider above a smaller-than-before width.
+    const targetWidth = Math.max(rect.width, BRIGHTNESS_POPOVER_MIN_WIDTH);
+    const targetHeight = targetWidth * (BRIGHTNESS_REF_HEIGHT / BRIGHTNESS_REF_WIDTH);
+    sheetBox.style.left = Math.round(rect.left + rect.width / 2 - targetWidth / 2) + 'px';
+    sheetBox.style.width = Math.round(targetWidth) + 'px';
+    sheetBox.style.top = Math.round(rect.bottom - targetHeight) + 'px';
+    sheetBox.style.height = Math.round(targetHeight) + 'px';
+  }
+
+  // The brightness pill/sheet toggle above sets sheetSlider.value and
+  // sheetSliderWrap.style.display = 'block' (in that order) each time the
+  // Brightness sheet is opened, and back to 'none' when a different sheet
+  // type (Mode/Intensity/...) opens instead -- watching the wrap's own
+  // style attribute is a reliable hook both to redraw the pill from that
+  // freshly-set value and to swap the whole sheet between "grows out of
+  // its own button" (brightness) and the normal full-width bottom sheet
+  // (everything else). positionPopover() runs first: render() sizes the
+  // fill/badge in CSS percent/max() against the pill's own real rendered
+  // height rather than a fixed constant, so ordering isn't strictly
+  // required for correctness, but doing the resize before the redraw
+  // still reads more naturally.
+  const wrap = document.getElementById('sheet-slider-wrap');
+  new MutationObserver(() => {
+    const isBrightness = wrap.style.display === 'block';
+    if (overlay) overlay.classList.toggle('brightness-popover', isBrightness);
+    if (isBrightness) {
+      positionPopover();
+      render(Number(slider.value));
+    } else if (sheetBox) {
+      // positionPopover() sets left/top/width/height/transition as inline
+      // styles, which beat *any* CSS rule (including the base .sheet rules
+      // Mode/Intensity/What/Where rely on) regardless of the
+      // .brightness-popover class being removed -- without clearing them
+      // back out here, every sheet after the first time brightness was
+      // opened this session stayed stuck at whatever small size/position
+      // brightness last used instead of its own normal full-width layout.
+      sheetBox.style.left = '';
+      sheetBox.style.top = '';
+      sheetBox.style.width = '';
+      sheetBox.style.height = '';
+      sheetBox.style.transition = '';
+    }
+  }).observe(wrap, { attributes: true, attributeFilter: ['style'] });
+})();
 
 document.getElementById('btn-what').addEventListener('click', () => {
   if (!state || !state.hdmi) return;
@@ -641,6 +816,7 @@ let entareaRooms = []; // [{ id, name, lights: [{serviceId,lightId,deviceId,name
 let entareaLightsView = 'rooms'; // 'rooms' | 'lights' -- which panel the Lights section is showing
 let entareaCurrentRoom = null;
 let entareaSnapshot = ''; // JSON snapshot at open/save time, for the unsaved-changes warning
+let roomLayoutSnapshot = ''; // JSON snapshot of roomLayout (TV/couch) at open/save time -- see btn-entarea-save/-close
 
 function snapshotEntarea() {
   const lights = includedLights()
@@ -665,7 +841,7 @@ async function openEntareaEdit(config) {
 
   const lightsById = {};
   bridgeLights.forEach((l, i) => {
-    lightsById[l.serviceId] = { name: l.name, position: gridPosition(i, bridgeLights.length), included: false };
+    lightsById[l.serviceId] = { name: l.name, lightId: l.lightId, position: gridPosition(i, bridgeLights.length), included: false };
   });
   if (config) {
     for (const sl of config.locations.service_locations) {
@@ -678,6 +854,7 @@ async function openEntareaEdit(config) {
   }
   entareaDraft = { id: config ? config.id : null, name: config ? config.metadata.name : '', lightsById };
   entareaSnapshot = snapshotEntarea();
+  roomLayoutSnapshot = JSON.stringify(roomLayout);
   renderEntareaEdit();
   showView('entareaEdit');
 }
@@ -712,7 +889,10 @@ function lightToggleRow(serviceId, light) {
   const checkbox = row.querySelector('input');
   checkbox.addEventListener('change', (e) => {
     entareaDraft.lightsById[serviceId].included = e.target.checked;
-    if (e.target.checked) pulseEl(iconEl);
+    if (e.target.checked) {
+      pulseEl(iconEl);
+      identifyLight(light.lightId);
+    }
   });
   // Clicking the row (not the switch itself, which handles its own toggle)
   // just identifies the light -- same idea as clicking one in the placement
@@ -720,8 +900,21 @@ function lightToggleRow(serviceId, light) {
   row.addEventListener('click', (e) => {
     if (e.target.closest('.switch')) return;
     pulseEl(iconEl);
+    identifyLight(light.lightId);
   });
   return row;
+}
+
+// Briefly blinks the *physical* bulb (not just this on-screen UI) via the
+// Bridge's identify action, on top of the existing pulseEl()/pulseLight()
+// on-screen pulse -- so picking a light here or in the 3D placement
+// room/legend gives a real-world answer to "which bulb is that", not just a
+// UI highlight. Optional-chained since this method may not exist on every
+// platform's window.hueSync (Android's services.js has it; best-effort and
+// silently a no-op anywhere it doesn't).
+function identifyLight(lightId) {
+  if (!lightId || !currentBridge) return;
+  window.hueSync.identifyLight?.(currentBridge.ip, lightId);
 }
 
 // Bridge Rooms are shown first as a drill-down (tap a room to see just its
@@ -790,6 +983,11 @@ document.getElementById('btn-entarea-edit-close').addEventListener('click', asyn
     const discard = await confirmDialog('Discard changes?', 'This entertainment area has unsaved changes.');
     if (!discard) return;
   }
+  // Any TV/couch move this edit session only ever lived in memory (see
+  // their own drag up() handlers) -- closing without hitting Save reverts
+  // it back to whatever was last actually persisted, the same as an
+  // unsaved light/name change never reaching the Bridge.
+  if (roomLayoutSnapshot) roomLayout = JSON.parse(roomLayoutSnapshot);
   showView('entareas');
 });
 
@@ -801,6 +999,11 @@ document.getElementById('btn-entarea-save').addEventListener('click', async () =
   } else {
     await window.hueSync.createEntertainmentConfig(currentBridge.ip, name, lightsPayload);
   }
+  // Commits this session's TV/couch position (if it changed) alongside the
+  // area's own name/lights -- see the drag handlers' own comments for why
+  // this doesn't already happen immediately on drag.
+  saveRoomLayout();
+  roomLayoutSnapshot = JSON.stringify(roomLayout);
   showView('entareas');
   loadEntareasList();
 });
@@ -846,11 +1049,16 @@ function confirmDialog(title, message, confirmLabel = 'Discard') {
 // as the wall and floor. Dragging a light's ball moves it along the floor
 // (x and z together, in one gesture -- no location/height mode switch);
 // scrolling over it raises or lowers it (y) instead.
-const ROOM_HALF_WIDTH = 110; // px, matches .room3d-back-wall / .room3d-floor width (220) / 2
-const ROOM_HALF_DEPTH = 90; // px, matches the translateZ(-90px) walls/floor share
-const ROOM_FLOOR_Y = 60; // px below the stage's vertical center -- matches .room3d-back-wall's -60px margin-top
-const ROOM_HEIGHT = 120; // px floor-to-ceiling, matches .room3d-back-wall's height
-const ROOM_BALL_MARGIN = 14; // px -- keeps the ball's edge (not just its center) clear of the floor/ceiling
+// These, and the TV/WALL constants further below, all scale together with
+// every pixel value in the .room3d-* CSS (see style.css) as one unit --
+// every relationship between them (documented at each spot) holds at any
+// size as long as every one of these numbers and every matching CSS value
+// carries the same scale factor.
+const ROOM_HALF_WIDTH = 176; // px, matches .room3d-back-wall / .room3d-floor width (352) / 2
+const ROOM_HALF_DEPTH = 144; // px, matches the translateZ(-144px) walls/floor share
+const ROOM_FLOOR_Y = 96; // px below the stage's vertical center -- matches .room3d-back-wall's -96px margin-top
+const ROOM_HEIGHT = 192; // px floor-to-ceiling, matches .room3d-back-wall's height
+const ROOM_BALL_MARGIN = 22.4; // px -- keeps the ball's edge (not just its center) clear of the floor/ceiling
 // Ball-center travel: y=0 sits just off the floor, y=1 sits just under the
 // ceiling -- not 0..ROOM_HEIGHT, which would let the ball clip through
 // both, and not some fraction of it either, which was the earlier bug
@@ -874,6 +1082,13 @@ function lightHeightPx(yNorm) {
 const ROOM_DEFAULT_PITCH = -24;
 let cameraYaw = 0;
 let cameraPitch = ROOM_DEFAULT_PITCH;
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 1.8;
+// null until first computed (see defaultRoomZoom() below, near roomWrapEl)
+// -- lets a fresh session start fit-to-window on any screen size while
+// still letting cameraZoom persist across placement-view visits
+// afterward, same as cameraYaw/cameraPitch above.
+let cameraZoom = null;
 
 // Each ball is a flat disc, not a real sphere -- without correction it
 // goes edge-on (shrinks to an invisible sliver) at some rotation angles.
@@ -889,7 +1104,7 @@ function applyBallBillboard(ball) {
 }
 
 function updateCameraTransform() {
-  const t = `rotateX(${cameraPitch}deg) rotateY(${cameraYaw}deg)`;
+  const t = `scale(${cameraZoom ?? 1}) rotateX(${cameraPitch}deg) rotateY(${cameraYaw}deg)`;
   document.querySelector('#view-light-placement .room3d-stage').style.transform = t;
   document.getElementById('room3d-objects-stage').style.transform = t;
   document.getElementById('room3d-lights-stage').style.transform = t;
@@ -899,6 +1114,7 @@ function updateCameraTransform() {
 function resetRoomView() {
   cameraYaw = 0;
   cameraPitch = ROOM_DEFAULT_PITCH;
+  cameraZoom = defaultRoomZoom();
   updateCameraTransform();
 }
 
@@ -906,25 +1122,132 @@ const btnRoomResetView = document.getElementById('btn-room-reset-view');
 btnRoomResetView.addEventListener('pointerdown', (e) => e.stopPropagation());
 btnRoomResetView.addEventListener('click', resetRoomView);
 
+// ---- Undo (single-level, covers the TV/couch/light-position drags below) ----
+//
+// Only one step deep -- this is a safety net for "oops, that drag was
+// actually an accidental click", not a full history. Session-wide revert
+// still exists separately via the entertainment area's Discard/close (see
+// btn-entarea-edit-close), which this doesn't replace.
+let lastMove = null; // { restore: fn }
+const btnRoomUndo = document.getElementById('btn-room-undo');
+
+function clearUndo() {
+  lastMove = null;
+  btnRoomUndo.style.display = 'none';
+}
+
+function recordMove(restore) {
+  lastMove = { restore };
+  btnRoomUndo.style.display = 'flex';
+}
+
+btnRoomUndo.addEventListener('pointerdown', (e) => e.stopPropagation());
+btnRoomUndo.addEventListener('click', () => {
+  if (!lastMove) return;
+  lastMove.restore();
+  clearUndo();
+});
+
 const roomWrapEl = document.getElementById('room3d-wrap');
+
+// The room's actual 3D content (.room3d-stage etc.) is a fixed
+// ROOM_HALF_WIDTH*2 px square regardless of room3d-wrap's own (responsive)
+// width -- on a narrower window (desktop's fixed 340px, vs. Android's
+// full, wider device width) than that fixed size, it would otherwise
+// overflow past the wrap's edges and get cropped by its overflow:hidden,
+// reading as "zoomed in" next to a wide-enough window where it was never
+// cropped in the first place. Shrinking to fit -- never magnifying past 1
+// just because the window happens to be wide enough already -- reproduces
+// Android's own uncropped default look on any window size. Callers must
+// run this only once room3d-wrap is actually visible (a hidden ancestor
+// reports 0 width), which is why resetRoomView() and the placement-view
+// open handler both call this only after showView('lightPlacement').
+function defaultRoomZoom() {
+  const wrapWidth = roomWrapEl.getBoundingClientRect().width;
+  if (!wrapWidth) return 1;
+  return Math.min(1, wrapWidth / (ROOM_HALF_WIDTH * 2));
+}
+
+// ---- Orbit (1 finger/pointer) and pinch-to-zoom (2) ----
+//
+// A single pointer orbits the view (unchanged from before); a second
+// pointer landing while the first is still down switches to a two-finger
+// pinch instead, scaling cameraZoom by how much the distance between the
+// two touches has changed since the pinch started. Listeners are
+// persistent (not added/removed per-gesture, unlike the light/TV/couch
+// drag handlers) because a pinch can start or end mid-gesture as fingers
+// land/lift, which per-gesture listeners can't express as cleanly.
+// Ending a gesture always means lifting every finger first, then starting
+// fresh -- no attempt to hand a 2-finger pinch back into a 1-finger orbit
+// mid-gesture without lifting, which would need its own re-anchoring
+// logic for comparatively little benefit. A third+ finger is ignored
+// entirely; whatever gesture (pinch, at that point) is already active
+// just keeps tracking its original two points.
+const activeRoomPointers = new Map(); // pointerId -> {x, y}
+let orbitStart = null; // { x, y, yaw, pitch }
+let pinchStart = null; // { dist, zoom }
+
+function pointerDist(a, b) {
+  return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
 roomWrapEl.addEventListener('pointerdown', (e) => {
   roomWrapEl.setPointerCapture(e.pointerId);
-  const startX = e.clientX;
-  const startY = e.clientY;
-  const startYaw = cameraYaw;
-  const startPitch = cameraPitch;
-  const move = (ev) => {
-    cameraYaw = startYaw + (ev.clientX - startX) * 0.4;
-    cameraPitch = Math.min(-5, Math.max(-80, startPitch - (ev.clientY - startY) * 0.4));
-    updateCameraTransform();
-  };
-  const up = () => {
-    roomWrapEl.removeEventListener('pointermove', move);
-    roomWrapEl.removeEventListener('pointerup', up);
-  };
-  roomWrapEl.addEventListener('pointermove', move);
-  roomWrapEl.addEventListener('pointerup', up);
+  activeRoomPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const pts = [...activeRoomPointers.values()];
+
+  if (pts.length === 2) {
+    orbitStart = null;
+    pinchStart = { dist: pointerDist(pts[0], pts[1]) || 1, zoom: cameraZoom ?? 1 };
+  } else if (pts.length === 1) {
+    pinchStart = null;
+    orbitStart = { x: e.clientX, y: e.clientY, yaw: cameraYaw, pitch: cameraPitch };
+  }
 });
+
+roomWrapEl.addEventListener('pointermove', (e) => {
+  if (!activeRoomPointers.has(e.pointerId)) return;
+  activeRoomPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+  if (pinchStart) {
+    const pts = [...activeRoomPointers.values()];
+    if (pts.length < 2) return;
+    const dist = pointerDist(pts[0], pts[1]);
+    cameraZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, pinchStart.zoom * (dist / pinchStart.dist)));
+    updateCameraTransform();
+  } else if (orbitStart) {
+    cameraYaw = orbitStart.yaw + (e.clientX - orbitStart.x) * 0.4;
+    cameraPitch = Math.min(-5, Math.max(-80, orbitStart.pitch - (e.clientY - orbitStart.y) * 0.4));
+    updateCameraTransform();
+  }
+});
+
+function endRoomPointer(e) {
+  activeRoomPointers.delete(e.pointerId);
+  if (activeRoomPointers.size < 2) pinchStart = null;
+  if (activeRoomPointers.size === 0) orbitStart = null;
+}
+roomWrapEl.addEventListener('pointerup', endRoomPointer);
+roomWrapEl.addEventListener('pointercancel', endRoomPointer);
+
+// Desktop equivalent of pinch: holding Ctrl while scrolling (a real mouse
+// wheel) or a trackpad pinch gesture (Chromium synthesizes these as wheel
+// events with ctrlKey set, unrelated to whether the physical Ctrl key is
+// actually held -- a long-standing browser convention, not something
+// specific to this app). Kept as a separate listener rather than folded
+// into the light-height one below so each stays a single, simple
+// responsibility; that one explicitly ignores ctrlKey wheel events so the
+// two never both act on the same scroll.
+roomWrapEl.addEventListener(
+  'wheel',
+  (e) => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    cameraZoom = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, (cameraZoom ?? 1) * (e.deltaY < 0 ? 1.08 : 1 / 1.08)));
+    updateCameraTransform();
+  },
+  { passive: false }
+);
 
 // ---- Room layout (TV + couch position) ----
 //
@@ -932,7 +1255,10 @@ roomWrapEl.addEventListener('pointerdown', (e) => {
 // my actual furniture" reference shared across every area, so it's kept
 // locally (not sent to the Bridge) and persisted across sessions.
 const ROOM_LAYOUT_KEY = 'synctroller-room-layout';
-const DEFAULT_ROOM_LAYOUT = { tv: { x: 0, y: -8 }, couch: { x: 0, z: 0.55 } };
+// TV centered on the wall (x/y both 0); couch centered (x:0) and pulled
+// back almost to the rear wall (z close to -1, the floor's back edge) but
+// not flush against it, leaving walking-room between them by default.
+const DEFAULT_ROOM_LAYOUT = { tv: { x: 0, y: 0 }, couch: { x: 0, z: -0.7 } };
 
 function loadRoomLayout() {
   try {
@@ -967,11 +1293,11 @@ let roomLayout = loadRoomLayout();
 // turned out to be the same underlying bug, just discovered a session
 // apart -- the browser doesn't reliably depth-sort against a plane (the
 // floor; the side walls) that spans a wide range of its own depth.
-const TV_HALF_WIDTH = 68; // px, half of .room3d-tv's 136px width
-const TV_HALF_HEIGHT = 38.25; // px, half of 136 * 9/16
-const WALL_HALF_WIDTH = 110; // px, matches .room3d-back-wall
-const WALL_HALF_HEIGHT = 60; // px, matches .room3d-back-wall
-const TV_WALL_Z = -88; // px, just in front of the wall's own -90 depth
+const TV_HALF_WIDTH = 108.8; // px, half of .room3d-tv's 217.6px width
+const TV_HALF_HEIGHT = 61.2; // px, half of 217.6 * 9/16
+const WALL_HALF_WIDTH = 176; // px, matches .room3d-back-wall
+const WALL_HALF_HEIGHT = 96; // px, matches .room3d-back-wall
+const TV_WALL_Z = -140.8; // px, just in front of the wall's own -144 depth
 
 const roomTvEl = document.querySelector('#view-light-placement .room3d-tv');
 
@@ -981,10 +1307,21 @@ function applyTvPosition() {
 }
 applyTvPosition();
 
+// Requires a first tap to select the TV (see the matching light-ball
+// comment above) before a second pointerdown actually starts dragging it --
+// otherwise a drag meant to orbit the room that happens to start on the TV
+// nudges it instead. Deselects again once a move finishes (unlike a light,
+// which stays selected afterward for the height control) since there's
+// nothing else on this screen that needs the TV to stay "current".
 roomTvEl.addEventListener('pointerdown', (e) => {
+  if (!roomTvEl.classList.contains('selected')) {
+    roomTvEl.classList.add('selected');
+    return;
+  }
   e.stopPropagation();
   e.preventDefault();
   roomTvEl.setPointerCapture(e.pointerId);
+  const before = { x: roomLayout.tv.x, y: roomLayout.tv.y };
   const wall = document.querySelector('#view-light-placement .room3d-back-wall');
   const move = (ev) => {
     const rect = wall.getBoundingClientRect();
@@ -999,7 +1336,19 @@ roomTvEl.addEventListener('pointerdown', (e) => {
   const up = () => {
     roomTvEl.removeEventListener('pointermove', move);
     roomTvEl.removeEventListener('pointerup', up);
-    saveRoomLayout();
+    roomTvEl.classList.remove('selected');
+    // Not saveRoomLayout() -- persisting only happens on the entertainment
+    // area's own Save button now (see btn-entarea-save), same as its name/
+    // light changes; closing without saving reverts this in memory (see
+    // btn-entarea-edit-close) instead of the old behavior of writing to
+    // localStorage immediately on every drag regardless of Save/Discard.
+    if (roomLayout.tv.x !== before.x || roomLayout.tv.y !== before.y) {
+      recordMove(() => {
+        roomLayout.tv.x = before.x;
+        roomLayout.tv.y = before.y;
+        applyTvPosition();
+      });
+    }
   };
   roomTvEl.addEventListener('pointermove', move);
   roomTvEl.addEventListener('pointerup', up);
@@ -1007,9 +1356,26 @@ roomTvEl.addEventListener('pointerdown', (e) => {
 
 // ---- Couch (a real 3D object, draggable on the floor) ----
 
+// Module-level (not just a closure inside ensureCouchEl()) so ensureCouchEl
+// can re-sync the couch's position every time it's called, not only the
+// first time it creates the element -- needed now that roomLayout.couch
+// can also change *without* a drag (a reverted-on-close edit session, see
+// btn-entarea-edit-close), which the early-return below wouldn't otherwise
+// ever repaint.
+function setCouchTransform() {
+  const couch = document.querySelector('#room3d-objects-stage .room3d-couch');
+  if (!couch) return;
+  const x = roomLayout.couch.x * ROOM_HALF_WIDTH;
+  const z = roomLayout.couch.z * ROOM_HALF_DEPTH;
+  couch.style.transform = `translate3d(${x}px, ${ROOM_FLOOR_Y}px, ${z}px)`;
+}
+
 function ensureCouchEl() {
   let couch = document.querySelector('#room3d-objects-stage .room3d-couch');
-  if (couch) return couch;
+  if (couch) {
+    setCouchTransform();
+    return couch;
+  }
 
   couch = document.createElement('div');
   couch.className = 'room3d-couch';
@@ -1019,19 +1385,23 @@ function ensureCouchEl() {
     <div class="room3d-couch-armrest room3d-couch-armrest-left"></div>
     <div class="room3d-couch-armrest room3d-couch-armrest-right"></div>
   `;
-
-  const setCouchTransform = () => {
-    const x = roomLayout.couch.x * ROOM_HALF_WIDTH;
-    const z = roomLayout.couch.z * ROOM_HALF_DEPTH;
-    couch.style.transform = `translate3d(${x}px, ${ROOM_FLOOR_Y}px, ${z}px)`;
-  };
+  document.getElementById('room3d-objects-stage').appendChild(couch);
   setCouchTransform();
 
   const floor = document.getElementById('room3d-floor');
+  // Same tap-to-select-before-move pattern as the lights/TV (see their own
+  // comments) -- a first pointerdown just selects the couch instead of
+  // immediately dragging it, so a room-orbit drag that happens to start on
+  // it doesn't nudge it instead.
   couch.addEventListener('pointerdown', (e) => {
+    if (!couch.classList.contains('selected')) {
+      couch.classList.add('selected');
+      return;
+    }
     e.stopPropagation();
     e.preventDefault();
     couch.setPointerCapture(e.pointerId);
+    const before = { x: roomLayout.couch.x, z: roomLayout.couch.z };
     const move = (ev) => {
       const rect = floor.getBoundingClientRect();
       const fx = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width));
@@ -1043,21 +1413,40 @@ function ensureCouchEl() {
     const up = () => {
       couch.removeEventListener('pointermove', move);
       couch.removeEventListener('pointerup', up);
-      saveRoomLayout();
+      couch.classList.remove('selected');
+      // See the TV's own up() comment -- persisting is gated behind the
+      // entertainment area's Save button now, not immediate on every drag.
+      if (roomLayout.couch.x !== before.x || roomLayout.couch.z !== before.z) {
+        recordMove(() => {
+          roomLayout.couch.x = before.x;
+          roomLayout.couch.z = before.z;
+          setCouchTransform();
+        });
+      }
     };
     couch.addEventListener('pointermove', move);
     couch.addEventListener('pointerup', up);
   });
 
-  document.getElementById('room3d-objects-stage').appendChild(couch);
   return couch;
 }
 
 document.getElementById('btn-entarea-placement').addEventListener('click', () => {
+  // Before anything else -- room3d-wrap must actually be visible for
+  // defaultRoomZoom() below to measure a real (non-zero) width.
+  showView('lightPlacement');
+  // Only computed once per session (persists across visits after that,
+  // same as cameraYaw/cameraPitch); see defaultRoomZoom()'s own comment.
+  if (cameraZoom === null) cameraZoom = defaultRoomZoom();
   updateCameraTransform();
+  // Re-syncs the TV to the current roomLayout.tv every time this view is
+  // entered (applyTvPosition() otherwise only ran once at page load and on
+  // each drag move) -- needed now that roomLayout.tv can also change
+  // *without* a drag (a reverted-on-close edit session, see
+  // btn-entarea-edit-close), which would otherwise never get repainted.
+  applyTvPosition();
   ensureCouchEl();
   renderPlacementRoom();
-  showView('lightPlacement');
 });
 
 document.getElementById('btn-placement-done').addEventListener('click', () => showView('entareaEdit'));
@@ -1080,6 +1469,8 @@ function setCurrentLight(index) {
   if (legendItem) legendItem.classList.add('current');
   if (ball) ball.classList.add('current');
   pulseLight(index);
+  const light = includedLights()[index];
+  if (light) identifyLight(light.lightId);
 }
 
 // Height is adjusted by scrolling over a light's ball -- but the ball
@@ -1107,6 +1498,10 @@ function renderPlacementRoom() {
   const stage = document.getElementById('room3d-lights-stage');
   stage.querySelectorAll('.room3d-light').forEach((el) => el.remove());
   wheelLock = null;
+  // Lights are rebuilt fresh below, so any undo recorded against the
+  // previous set of light objects (or a stale TV/couch position from before
+  // this view was entered) would restore the wrong thing.
+  clearUndo();
 
   const lights = includedLights();
   lights.forEach((light, index) => {
@@ -1141,10 +1536,24 @@ function renderPlacementRoom() {
     setHeight();
 
     ball.addEventListener('pointerdown', (e) => {
+      // A light must already be the selected/current one before a
+      // pointerdown on it starts moving it -- otherwise a drag meant to
+      // orbit the room (see roomWrapEl's own pointerdown below) that
+      // happens to start on top of a light nudges the light instead, since
+      // stopPropagation() here was swallowing that pointerdown before the
+      // room ever saw it. Not stopping propagation on this first,
+      // selecting tap lets both happen: the light is selected AND the
+      // same gesture still reaches the room to orbit it if the user
+      // continues dragging.
+      if (!ball.classList.contains('current')) {
+        setCurrentLight(index);
+        return;
+      }
       e.stopPropagation();
       e.preventDefault();
       ball.setPointerCapture(e.pointerId);
 
+      const before = { x: light.position.x, z: light.position.z };
       const move = (ev) => {
         const rect = floor.getBoundingClientRect();
         const fx = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width));
@@ -1156,7 +1565,13 @@ function renderPlacementRoom() {
       const up = () => {
         ball.removeEventListener('pointermove', move);
         ball.removeEventListener('pointerup', up);
-        setCurrentLight(index);
+        if (light.position.x !== before.x || light.position.z !== before.z) {
+          recordMove(() => {
+            light.position.x = before.x;
+            light.position.z = before.z;
+            setAnchorTransform();
+          });
+        }
       };
       ball.addEventListener('pointermove', move);
       ball.addEventListener('pointerup', up);
@@ -1174,6 +1589,10 @@ function renderPlacementRoom() {
 document.getElementById('room3d-wrap').addEventListener(
   'wheel',
   (e) => {
+    // A ctrlKey wheel event is the pinch-to-zoom gesture (see roomWrapEl's
+    // own wheel listener) -- never light height, even while hovering a
+    // ball.
+    if (e.ctrlKey) return;
     const ballEl = e.target.closest('.room3d-light-ball');
     let index = ballEl ? Number(ballEl.dataset.index) : wheelLock ? wheelLock.index : null;
     if (index === null) return;

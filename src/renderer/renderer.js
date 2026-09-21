@@ -5,11 +5,17 @@
 // by the desktop and Android builds (this file is byte-identical in both).
 // Bump APP_VERSION and add a CHANGELOG entry whenever a user-visible change
 // ships; keep package.json / PKGBUILD / build.gradle in step with it.
-const APP_VERSION = '1.2.0';
+const APP_VERSION = '1.2.1';
 const APP_AUTHOR = 'RoodleSoft';
-const APP_AUTHOR_URL = 'https://www.linkedin.com/in/sean-p-mackay/';
 const APP_COPYRIGHT_YEAR = 2026;
 const CHANGELOG = [
+  {
+    version: '1.2.1',
+    date: '2026-09-21',
+    changes: [
+      'Removed the personal LinkedIn link from the About screen.',
+    ],
+  },
   {
     version: '1.2.0',
     date: '2026-09-20',
@@ -112,9 +118,6 @@ document.getElementById('btn-about').addEventListener('click', () => {
   showView('about');
 });
 document.getElementById('btn-about-back').addEventListener('click', () => showView('settings'));
-document.getElementById('btn-about-linkedin').addEventListener('click', () => {
-  window.hueSync.openExternal(APP_AUTHOR_URL);
-});
 
 // Icons are proper inline SVG (see icons.js) rather than emoji -- emoji
 // glyphs render inconsistently (missing/ugly fallback shapes) depending on

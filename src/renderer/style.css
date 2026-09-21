@@ -393,19 +393,6 @@ button.toggle-btn:hover { background: var(--surface-3); }
 }
 .about-dev-name { font-size: 14px; font-weight: 600; }
 
-.about-link-btn {
-  width: 100%; border: none; cursor: pointer; font-family: inherit;
-  display: flex; align-items: center; gap: 10px;
-  background: var(--surface-2); color: var(--text);
-  border-radius: var(--radius-sm); padding: 12px 14px;
-  font-size: 13px; font-weight: 600;
-  transition: background 0.15s;
-}
-.about-link-btn:hover { background: var(--surface-3); }
-.about-link-btn > svg:first-child { color: #0a66c2; flex-shrink: 0; }
-.about-link-btn > span { flex: 1; text-align: left; }
-.about-link-ext { color: var(--text-dimmer); flex-shrink: 0; }
-
 .about-changelog { display: flex; flex-direction: column; gap: 14px; }
 .about-release-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
 .about-release-version { font-size: 14px; font-weight: 700; }

@@ -1,6 +1,6 @@
 {
   "name": "hue-sync-controller",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Standalone desktop controller for the Philips Hue Play HDMI Sync Box",
   "main": "src/main.js",
   "author": "RoodleSoft",

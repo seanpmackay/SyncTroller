@@ -6,7 +6,7 @@
 // Bump APP_VERSION and add a CHANGELOG entry whenever a user-visible change
 // ships; keep package.json / PKGBUILD / build.gradle in step with it.
 const APP_VERSION = '1.2.0';
-const APP_AUTHOR = 'Sean Mackay';
+const APP_AUTHOR = 'Sean MacKay';
 const APP_AUTHOR_URL = 'https://www.linkedin.com/in/sean-p-mackay/';
 const APP_COPYRIGHT_YEAR = 2026;
 const CHANGELOG = [

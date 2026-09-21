@@ -3,12 +3,13 @@
   "version": "1.2.0",
   "description": "Standalone desktop controller for the Philips Hue Play HDMI Sync Box",
   "main": "src/main.js",
-  "author": "Sean Mackay",
+  "author": "Sean MacKay",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "install:desktop": "bash packaging/install-user.sh"
   },
   "devDependencies": {
     "electron": "^33.0.0",

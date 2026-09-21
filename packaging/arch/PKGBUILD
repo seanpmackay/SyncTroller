@@ -1,4 +1,4 @@
-# Maintainer: Sean Mackay
+# Maintainer: Sean MacKay
 #
 # This is a LOCAL-only package -- it builds from the electron-builder output
 # already produced in this checkout (../../dist/linux-unpacked), not from a

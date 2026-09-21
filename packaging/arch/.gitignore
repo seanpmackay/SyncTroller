@@ -3,3 +3,4 @@ src/
 *.pkg.tar.zst
 LICENSE-*
 icon-*
+*.tar.gz

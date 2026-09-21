@@ -27,7 +27,12 @@
       ],
       "category": "Utility",
       "icon": "assets/icon.png"
-    }
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ]
   },
   "allowScripts": {
     "electron@33.4.11": true

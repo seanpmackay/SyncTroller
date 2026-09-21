@@ -1,5 +1,49 @@
 'use strict';
 
+// ---- App identity ----
+// Single source of truth for the version shown in Settings > About, shared
+// by the desktop and Android builds (this file is byte-identical in both).
+// Bump APP_VERSION and add a CHANGELOG entry whenever a user-visible change
+// ships; keep package.json / PKGBUILD / build.gradle in step with it.
+const APP_VERSION = '1.2.0';
+const APP_AUTHOR = 'Sean Mackay';
+const APP_AUTHOR_URL = 'https://www.linkedin.com/in/sean-p-mackay/';
+const APP_COPYRIGHT_YEAR = 2026;
+const CHANGELOG = [
+  {
+    version: '1.2.0',
+    date: '2026-09-20',
+    changes: [
+      'Undo the last move while placing lights, the TV, or the couch in a room.',
+      'New brightness control: a vertical fill that grows out of its own button.',
+      'The 3D room now fits the window; zoom with a pinch or Ctrl + scroll.',
+      'Forget/Delete actions use one consistent full-width style everywhere.',
+      'Added this About screen.',
+    ],
+  },
+  {
+    version: '1.1.0',
+    date: '2026-09-19',
+    changes: [
+      'Android: finds every Sync Box and Hue Bridge on the network, not just the first.',
+      'Android: the back gesture steps up one screen at a time instead of leaving the app.',
+      'Android: persistent sync-status notification for quick access from the shade.',
+      'Larger settings button and a cleaner main-screen layout.',
+    ],
+  },
+  {
+    version: '1.0.0',
+    date: '2026-09-18',
+    changes: [
+      'Initial release: pair with a Hue Play HDMI Sync Box and toggle sync.',
+      'Switch mode, intensity, brightness, and HDMI input.',
+      'Pair a Hue Bridge and create or edit entertainment areas with 3D light placement.',
+      'Desktop: system-tray controls, close/minimize to tray, launch on login.',
+    ],
+  },
+];
+
+
 const views = {
   pairing: document.getElementById('view-pairing'),
   presslink: document.getElementById('view-presslink'),
@@ -11,6 +55,7 @@ const views = {
   entareas: document.getElementById('view-entareas'),
   entareaEdit: document.getElementById('view-entarea-edit'),
   lightPlacement: document.getElementById('view-light-placement'),
+  about: document.getElementById('view-about'),
 };
 
 function showView(name) {
@@ -28,6 +73,47 @@ document.getElementById('btn-settings').addEventListener('click', () => {
 document.getElementById('btn-settings-back').addEventListener('click', () => {
   showView('main');
   refreshState();
+});
+
+// ---- About ----
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function formatReleaseDate(iso) {
+  const d = new Date(`${iso}T00:00:00`);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function renderAbout() {
+  document.querySelectorAll('.about-version').forEach((el) => { el.textContent = APP_VERSION; });
+  document.querySelectorAll('.about-year').forEach((el) => { el.textContent = String(APP_COPYRIGHT_YEAR); });
+  const list = document.getElementById('about-changelog');
+  list.innerHTML = CHANGELOG.map((release, i) => `
+    <div class="about-release${i === 0 ? ' about-release-current' : ''}">
+      <div class="about-release-head">
+        <span class="about-release-version">${escapeHtml(release.version)}</span>
+        ${i === 0 ? '<span class="about-release-badge">Current</span>' : ''}
+        <span class="about-release-date">${escapeHtml(formatReleaseDate(release.date))}</span>
+      </div>
+      <ul class="about-release-list">
+        ${release.changes.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}
+      </ul>
+    </div>`).join('');
+}
+
+// The row's version label is filled once at load so it's right the first
+// time the settings screen opens, not only after About has been visited.
+renderAbout();
+
+document.getElementById('btn-about').addEventListener('click', () => {
+  renderAbout();
+  views.about.scrollTop = 0; // hidden views keep their scroll offset; always open at the top
+  showView('about');
+});
+document.getElementById('btn-about-back').addEventListener('click', () => showView('settings'));
+document.getElementById('btn-about-linkedin').addEventListener('click', () => {
+  window.hueSync.openExternal(APP_AUTHOR_URL);
 });
 
 // Icons are proper inline SVG (see icons.js) rather than emoji -- emoji

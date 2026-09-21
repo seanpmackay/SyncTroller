@@ -344,6 +344,90 @@ button.toggle-btn:hover { background: var(--surface-3); }
 .settings-item-icon-btn:hover { color: var(--text); }
 .settings-item-row input[type="text"] { background: var(--surface); font-size: 13px; padding: 8px 10px; }
 
+/* ---------- About ---------- */
+
+/* Entry row at the very bottom of Settings -- styled as a peer of the
+   settings-item rows above it, but as a real <button> so it's keyboard-
+   and screen-reader-reachable. */
+.about-row {
+  width: 100%; border: none; cursor: pointer; font-family: inherit; text-align: left;
+  color: var(--text);
+  transition: background 0.15s;
+}
+.about-row:hover { background: var(--surface-3); }
+.about-row-icon { color: var(--accent-a); cursor: pointer; }
+.about-row-text { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.about-row-title { font-size: 13px; font-weight: 600; }
+.about-row-chevron { color: var(--text-dimmer); flex-shrink: 0; }
+
+.about-hero {
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: 8px 8px 24px;
+}
+.about-hero-icon {
+  width: 84px; height: 84px; border-radius: 22px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  margin-bottom: 14px;
+  user-select: none; -webkit-user-drag: none;
+}
+.about-hero-name {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.01em;
+  background: var(--accent-grad);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+}
+.about-hero-version {
+  margin-top: 6px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+  color: var(--text-dim);
+  background: var(--surface-2); border-radius: 999px; padding: 4px 12px;
+}
+.about-hero-tagline { margin: 12px 0 0; font-size: 13px; color: var(--text-dim); max-width: 26em; }
+
+.about-dev { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.about-dev-avatar {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent-grad); color: #fff;
+  font-size: 15px; font-weight: 700; letter-spacing: 0.02em;
+  display: flex; align-items: center; justify-content: center;
+}
+.about-dev-name { font-size: 14px; font-weight: 600; }
+
+.about-link-btn {
+  width: 100%; border: none; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface-2); color: var(--text);
+  border-radius: var(--radius-sm); padding: 12px 14px;
+  font-size: 13px; font-weight: 600;
+  transition: background 0.15s;
+}
+.about-link-btn:hover { background: var(--surface-3); }
+.about-link-btn > svg:first-child { color: #0a66c2; flex-shrink: 0; }
+.about-link-btn > span { flex: 1; text-align: left; }
+.about-link-ext { color: var(--text-dimmer); flex-shrink: 0; }
+
+.about-changelog { display: flex; flex-direction: column; gap: 14px; }
+.about-release-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+.about-release-version { font-size: 14px; font-weight: 700; }
+.about-release-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  background: var(--accent-grad); color: #fff;
+  border-radius: 999px; padding: 2px 8px; align-self: center;
+}
+.about-release-date { margin-left: auto; font-size: 11px; color: var(--text-dimmer); white-space: nowrap; }
+.about-release-list { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.45; color: var(--text-dim); }
+.about-release-list li { margin-bottom: 3px; }
+.about-release-list li::marker { color: var(--accent-b); }
+.about-release:not(.about-release-current) .about-release-version { color: var(--text-dim); }
+.about-release:not(.about-release-current) .about-release-list { color: var(--text-dimmer); }
+.about-release:not(:last-child) { padding-bottom: 14px; border-bottom: 1px solid var(--surface-3); }
+
+.about-footer {
+  margin-top: auto; padding: 8px 4px 0;
+  text-align: center; font-size: 11px; line-height: 1.5; color: var(--text-dimmer);
+}
+.about-footer-legal { margin-top: 6px; opacity: 0.8; }
+
 /* ---------- Bottom sheet ---------- */
 
 .sheet-overlay {

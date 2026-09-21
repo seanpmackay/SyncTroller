@@ -14,8 +14,8 @@
 # path below is specific to this machine).
 
 pkgname=synctroller
-pkgver=0.1.0
-pkgrel=2
+pkgver=1.2.0
+pkgrel=1
 pkgdesc="Standalone desktop controller for the Philips Hue Play HDMI Sync Box"
 arch=('x86_64')
 license=('custom')

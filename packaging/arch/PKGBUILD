@@ -24,14 +24,15 @@ source=("SyncTroller-$pkgver.tar.gz::$url/releases/download/v$pkgver/SyncTroller
         "LICENSE-$pkgver::https://raw.githubusercontent.com/seanpmackay/SyncTroller/v$pkgver/LICENSE"
         "icon-$pkgver.png::https://raw.githubusercontent.com/seanpmackay/SyncTroller/v$pkgver/assets/icon.png"
         "$_pkgname.desktop")
-sha256sums=('SKIP'
-            'SKIP'
-            'SKIP'
-            'SKIP')
+sha256sums=('9392e8b111b8410cafbc7ec969025a481f335a5c503aebcfb2f13b53e305b925'
+            '69436c11442a6839ff4cc54e2d1378f25f1569cc40ac8b857ef80c9cdee6c0dc'
+            'b7d38790f495dbf562cbe36d5e7d0f05865b76c5b146a99110dec67714369cf8'
+            '6d0c021871e8d212ce215ac43e9f78fccaa6165710341efe6c82527a79a891c1')
 
 package() {
   install -dm755 "$pkgdir/opt/$_pkgname"
   cp -a "$srcdir/SyncTroller-$pkgver/." "$pkgdir/opt/$_pkgname/"
+  chmod 4755 "$pkgdir/opt/$_pkgname/chrome-sandbox"
 
   install -dm755 "$pkgdir/usr/bin"
   ln -s "/opt/$_pkgname/hue-sync-controller" "$pkgdir/usr/bin/$_pkgname"

@@ -118,21 +118,6 @@ html, body {
 .btn-ghost { background: transparent; color: var(--text-dim); }
 .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
 .btn-danger { background: rgba(255,95,87,0.12); color: var(--danger); margin-top: 10px; }
-
-.feedback-form { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
-.feedback-form select,
-.feedback-form textarea,
-.feedback-form input[type="email"] {
-  background: var(--surface); border: 1px solid var(--surface-3);
-  border-radius: var(--radius-sm); padding: 10px 12px; color: var(--text);
-  font-size: 13px; font-family: inherit;
-}
-.feedback-form textarea { min-height: 70px; resize: vertical; }
-.feedback-form select:focus,
-.feedback-form textarea:focus,
-.feedback-form input[type="email"]:focus { outline: none; border-color: var(--accent-a); }
-.feedback-form button { align-self: flex-start; }
-.feedback-form #feedback-status { min-height: 1.2em; }
 .btn-danger:hover { background: rgba(255,95,87,0.2); }
 /* ---------- Full-width danger buttons ---------- */
 .settings-section .btn-danger,

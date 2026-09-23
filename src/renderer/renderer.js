@@ -119,36 +119,6 @@ document.getElementById('btn-about').addEventListener('click', () => {
 });
 document.getElementById('btn-about-back').addEventListener('click', () => showView('settings'));
 
-document.getElementById('feedback-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const status = document.getElementById('feedback-status');
-  const button = e.target.querySelector('button');
-  const details = document.getElementById('feedback-details').value.trim();
-  button.disabled = true;
-  status.textContent = 'Sending…';
-  try {
-    const res = await fetch('https://roodlesoft.com/api/feedback', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        source: 'synctroller-desktop',
-        category: document.getElementById('feedback-category').value,
-        subject: details.slice(0, 80),
-        summary: details.slice(0, 200),
-        details,
-        contactEmail: document.getElementById('feedback-email').value.trim(),
-      }),
-    });
-    if (!res.ok) throw new Error('failed');
-    status.textContent = "Thanks -- we'll get back to you.";
-    e.target.reset();
-  } catch {
-    status.textContent = 'Something went wrong. Please try again later.';
-  } finally {
-    button.disabled = false;
-  }
-});
-
 // Icons are proper inline SVG (see icons.js) rather than emoji -- emoji
 // glyphs render inconsistently (missing/ugly fallback shapes) depending on
 // the system's installed emoji font.

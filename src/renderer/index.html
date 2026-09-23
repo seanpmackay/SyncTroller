@@ -198,6 +198,21 @@
         <div id="about-changelog" class="about-changelog"></div>
       </div>
 
+      <div class="settings-section">
+        <div class="settings-title">Send Feedback</div>
+        <form id="feedback-form" class="feedback-form">
+          <select id="feedback-category">
+            <option value="support">Support request</option>
+            <option value="bug">Bug report</option>
+            <option value="feedback">Feedback / feature idea</option>
+          </select>
+          <textarea id="feedback-details" placeholder="What's going on?" required></textarea>
+          <input type="email" id="feedback-email" placeholder="Your email (so we can reply)">
+          <button type="submit" class="btn btn-primary">Send</button>
+          <div id="feedback-status" class="muted small"></div>
+        </form>
+      </div>
+
       <div class="about-footer">
         <div>&copy; <span class="about-year">2026</span> RoodleSoft. All rights reserved.</div>
         <div class="about-footer-legal">Philips Hue is a trademark of Signify Holding. This app is an independent project and is not affiliated with or endorsed by Signify.</div>
